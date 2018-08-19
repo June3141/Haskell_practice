@@ -4,8 +4,8 @@ import Data.List (unfoldr)
 length1 = 1.0
 length2 = 1.0
 -- t = 0での座標
-theta1_0 = - pi / 2
-theta2_0 = - pi / 2
+theta1_0 = pi
+theta2_0 = pi
 x1_0 =   length1 * sin theta1_0
 y1_0 = - length1 * cos theta1_0
 x2_0 =   length1 * sin theta1_0 + length2 * sin theta2_0
@@ -14,7 +14,7 @@ y2_0 = - length1 * cos theta1_0 - length2 * cos theta2_0
 t0 = 0.0
 t1 = 10.0
 -- シミュレーション回数
-n = 100 
+n = 1000 
 -- 角速度
 omega1_0 = 0.0
 omega2_0 = 0.0
@@ -31,12 +31,12 @@ dt = (t1 - t0) / n
 
 
 -- 角度の1階微分方程式
-f1 t theta1 theta2 omega1 omega2 = omega1
-f2 t theta1 theta2 omega1 omega2 = omega2
+f1 t theta1 omega1 theta2 omega2 = omega1
+f2 t theta1 omega1 theta2 omega2 = omega2
 
 -- 角度の2階微分方程式
 g1 :: Double -> Double -> Double -> Double -> Double -> Double
-g1 t theta1 theta2 omega1 omega2 = (a - b) / c
+g1 t theta1 omega1 theta2 omega2 = (a - b) / c
     where
         a = g / length1 * (sin theta2 * cos del_theta - mu * sin theta1)
         b = (omega2 ** 2 / l + omega1 ** 2 * cos del_theta) * sin del_theta
@@ -47,7 +47,7 @@ g1 t theta1 theta2 omega1 omega2 = (a - b) / c
 
 
 g2 :: Double -> Double -> Double -> Double -> Double -> Double
-g2 t theta1 theta2 omega1 omega2 = (a - b) / c
+g2 t theta1 omega1 theta2 omega2 = (a - b) / c
     where
         a = g * mu / length2 * (sin theta1 * cos del_theta - sin theta2)
         b = (mu * l * omega1 ** 2 + omega2 ** 2 * cos del_theta) * sin del_theta
@@ -81,21 +81,25 @@ rk4_theta st@(theta1, omega1, theta2, omega2, t) = st'
         -- 質点2に関するルンゲクッタ
         theta'2 = theta2 + dt / 6 * (m1 + 2 * m2 + 2 * m3 + m4)
         omega'2 = omega2 + dt / 6 * (n1 + 2 * n2 + 2 * n3 + n4)
-        k1 = f1 t theta1 theta2 omega1 omega2
+        --
+        k1 = f1 t theta1 omega1 theta2 omega2
         k2 = f1 (t + dt / 2) (theta1 + dt / 2 * k1) (omega1 + dt / 2 * l1) (theta2 + dt / 2 * m1) (omega2 + dt / 2 * n1)
         k3 = f1 (t + dt / 2) (theta1 + dt / 2 * k2) (omega2 + dt / 2 * l2) (theta2 + dt / 2 * m2) (omega2 + dt / 2 * n2)
-        k4 = f1 (t + dt) (theta1 + dt * k3) (omega1 + dt * l3) (theta2 + dt * m3) (omega2   + dt * n3)
-        l1 = g1 t theta1 theta2 omega1 omega2
+        k4 = f1 (t + dt) (theta1 + dt * k3) (omega1 + dt * l3) (theta2 + dt * m3) (omega2 + dt * n3)
+        --
+        l1 = g1 t theta1 omega1 theta2 omega2
         l2 = g1 (t + dt / 2) (theta1 + dt / 2 * k1) (omega1 + dt / 2 * l1) (theta2 + dt / 2 * m1) (omega2 + dt / 2 * n1)
-        l3 = g1 (t + dt / 2) (theta1 + dt / 2 * k1) (omega1 + dt / 2 * l1) (theta2 + dt / 2 * m1) (omega2 + dt / 2 * n1)
+        l3 = g1 (t + dt / 2) (theta1 + dt / 2 * k2) (omega1 + dt / 2 * l2) (theta2 + dt / 2 * m2) (omega2 + dt / 2 * n2)
         l4 = g1 (t + dt) (theta1 + dt * k3) (omega1 + dt * l3) (theta2 + dt * m3) (omega2 + dt * n3)
-        m1 = f2 t theta1 theta2 omega1 omega2
+        --
+        m1 = f2 t theta1 omega1 theta2 omega2
         m2 = f2 (t + dt / 2) (theta1 + dt / 2 * k1) (omega1 + dt / 2 * l1) (theta2 + dt / 2 * m1) (omega2 + dt / 2 * n1)
-        m3 = f2 (t + dt / 2) (theta1 + dt / 2 * k1) (omega1 + dt / 2 * l1) (theta2 + dt / 2 * m1) (omega2 + dt / 2 * n1)
+        m3 = f2 (t + dt / 2) (theta1 + dt / 2 * k2) (omega1 + dt / 2 * l2) (theta2 + dt / 2 * m2) (omega2 + dt / 2 * n2)
         m4 = f2 (t + dt) (theta1 + dt * k3) (omega1 + dt * l3) (theta2 + dt * m3) (omega2 + dt * n3)
-        n1 = g2 t theta1 theta2 omega1 omega2
+        --
+        n1 = g2 t theta1 omega1 theta2 omega2
         n2 = g2 (t + dt / 2) (theta1 + dt / 2 * k1) (omega1 + dt / 2 * l1) (theta2 + dt / 2 * m1) (omega2 + dt / 2 * n1)
-        n3 = g2 (t + dt / 2) (theta1 + dt / 2 * k1) (omega1 + dt / 2 * l1) (theta2 + dt / 2 * m1) (omega2 + dt / 2 * n1)
+        n3 = g2 (t + dt / 2) (theta1 + dt / 2 * k2) (omega1 + dt / 2 * l2) (theta2 + dt / 2 * m2) (omega2 + dt / 2 * n2)
         n4 = g2 (t + dt) (theta1 + dt * k3) (omega1 + dt * l3) (theta2 + dt * m3) (omega2 + dt * n3)
         -- tの更新
         t' = t + dt
